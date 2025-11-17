@@ -1,0 +1,30 @@
+[
+  {
+    "nama": "#welcome",
+    "count": 1
+  },
+  {
+    "nama": "#mute",
+    "count": 10
+  },
+  {
+    "nama": "#left",
+    "count": 1
+  },
+  {
+    "nama": "#autoaigrup",
+    "count": 3
+  },
+  {
+    "nama": "#autosimi",
+    "count": 1
+  },
+  {
+    "nama": "#setleft",
+    "count": 1
+  },
+  {
+    "nama": "#setwelcome",
+    "count": 2
+  }
+]
