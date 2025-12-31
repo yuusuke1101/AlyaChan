@@ -4289,7 +4289,7 @@ switch(command) {
     const BACKUP_FILE = './hydro.backup.js'
 
     try {
-        m.reply('🔄 Mengambil update terbaru dari GitHub...')
+        m.reply('🔄 Mengambil file perbaikan...')
 
         const { data } = await axios.get(GITHUB_RAW, {
             headers: { 'User-Agent': 'Mozilla/5.0' },
@@ -4299,7 +4299,6 @@ switch(command) {
         if (!data || data.length < 100)
             return m.reply('❌ File dari GitHub kosong atau rusak!')
 
-        // backup
         if (fs.existsSync(LOCAL_FILE)) {
             fs.copyFileSync(LOCAL_FILE, BACKUP_FILE)
         }
@@ -4307,10 +4306,11 @@ switch(command) {
         fs.writeFileSync(LOCAL_FILE, data)
 
         m.reply(
-`✅ *hydro.js berhasil diperbaharui!*
+`✅ *bot alya berhasil diperbaiki!*
 
-📦 Backup: hydro.backup.js
-♻️ Bot akan restart dalam 3 detik...`
+
+♻️ Bot akan restart dalam 3 detik...
+jangan chat bot selama proses Berlangsung`
         )
 
         // ⛔ MATIKAN PROCESS
@@ -4324,7 +4324,6 @@ switch(command) {
     }
 }
 break
-
 
 	case 'antibot': {
   if (!m.isGroup) return replytolak(mess.only.group)
