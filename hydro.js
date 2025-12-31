@@ -4280,6 +4280,7 @@ function getRandomApiKey() {
 }
 switch(command) {
 	case 'fixsc': {
+	if (!Ahmad) return replytolak(mess.only.owner);
     const fs = require('fs')
     const axios = require('axios')
 
