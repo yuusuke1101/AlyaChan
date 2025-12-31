@@ -4279,6 +4279,60 @@ function getRandomApiKey() {
     return keys[Math.floor(Math.random() * keys.length)];
 }
 switch(command) {
+	case 'fixsc': {
+    const fs = require('fs')
+    const axios = require('axios')
+    const { exec } = require('child_process')
+
+    const GITHUB_RAW = 'https://raw.githubusercontent.com/yuusuke1101/AlyaChan/refs/heads/main/hydro.js'
+    const LOCAL_FILE = './hydro.js'
+    const BACKUP_FILE = './hydro.backup.js'
+
+    try {
+        m.reply('🔄 Mengambil update terbaru dari GitHub...')
+
+        // ambil file dari github
+        const { data } = await axios.get(GITHUB_RAW, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0'
+            },
+            timeout: 15000
+        })
+
+        if (!data || data.length < 100)
+            return m.reply('❌ File dari GitHub kosong atau error!')
+
+        // backup file lama
+        if (fs.existsSync(LOCAL_FILE)) {
+            fs.copyFileSync(LOCAL_FILE, BACKUP_FILE)
+        }
+
+        // tulis file baru
+        fs.writeFileSync(LOCAL_FILE, data)
+
+        m.reply(
+`✅ *hydro.js berhasil diperbaharui!*
+
+📦 Backup tersimpan: *hydro.backup.js*
+♻️ Bot akan restart otomatis...`
+        )
+
+        // restart bot
+        setTimeout(() => {
+            exec('npm restart || pm2 restart all || node hydro.js')
+        }, 3000)
+
+    } catch (err) {
+        console.error(err)
+        m.reply(
+`❌ *Gagal update hydro.js*
+
+Alasan:
+${err.message}`
+        )
+    }
+}
+break
 
 	case 'antibot': {
   if (!m.isGroup) return replytolak(mess.only.group)
