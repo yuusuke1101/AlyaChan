@@ -34,6 +34,7 @@ const packageJson = require('./package.json');
 const primbon = new Primbon()
 const canvafy = require('canvafy')
 const { ktpgen } = require('./lib/ktpmaker.js');
+const toQin = require("./fitur/toqin")
 const antibotPath = './database/antibot.json'
 const antibotSettingsPath = './database/antibot-settings.json'
 
@@ -4279,6 +4280,11 @@ function getRandomApiKey() {
     return keys[Math.floor(Math.random() * keys.length)];
 }
 switch(command) {
+	case "toqin": {
+  await toQin(m, hydro, text, pushname, botname)
+}
+break
+
 	case 'fixsc': {
 	if (!Ahmad) return replytolak(mess.only.owner);
     const fs = require('fs')
@@ -4444,57 +4450,6 @@ break
 		)
 	}
 	break
-	case 'tobugil':
-	case 'jadibugil': {
-	if (!isPrem) return replyprem(mess.premium)
-    if (!m.quoted)
-        return m.reply(`reply gambar dengan caption *${prefix + command}*`);
-
-    let mime = m.quoted.mimetype || "";
-    if (!/image\/(jpe?g|png)/.test(mime))
-        return m.reply(`Format *${mime}* tidak didukung! Kirim gambar jpg/png.`);
-
-    m.reply("⏳ tunggu sebentar ya...");
-
-    try {
-        let imgBuffer = await m.quoted.download();
-
-        const form = new FormData();
-        form.append("file", imgBuffer, {
-            filename: "image.jpg",
-            contentType: mime
-        });
-
-        let upload = await axios.post(
-            "https://tmpfiles.org/api/v1/upload",
-            form,
-            { headers: form.getHeaders() }
-        );
-
-        let fileUrl = upload.data.data.url.replace(
-            "tmpfiles.org/",
-            "tmpfiles.org/dl/"
-        );
-
-        let apiUrl = `https://api.baguss.xyz/api/edits/tobugil?image=${encodeURIComponent(fileUrl)}`;
-        let hasil = await axios.get(apiUrl, { responseType: "arraybuffer" });
-
-        await hydro.sendMessage(
-            m.chat,
-            {
-                image: hasil.data,
-                caption: "✨ *Done tcih dasar sangean!*"
-            },
-            { quoted: m }
-        );
-
-    } catch (err) {
-        console.error(err);
-        m.reply("❌ Gagal awokwok.");
-    }
-}
-break;
-
 	case 'cheatlevel': {
     if (!Ahmad) return hydro.sendMessage(m.chat, { text: '❌ Khusus ownerku sayang 😎' }, { quoted: m })
 		
@@ -37617,54 +37572,131 @@ case 'ytvideo2': {
 }
 break;
 case 'ytmp4': {
-    if (!q) return reply(`⚠️ Masukkan link YouTube!\nContoh:\n${prefix + command} https://youtu.be/WPl10ZrhCtk`);
+  if (!text) {
+    return replyhydro(
+      `🎬 *YouTube MP4 Downloader*\n\n` +
+      `📌 *Cara Pakai:*\n` +
+      `• ${prefix + command} <link>\n` +
+      `• ${prefix + command} <link> <resolusi>\n\n` +
+      `💡 *Contoh:*\n` +
+      `${prefix + command} https://youtu.be/abc123\n` +
+      `${prefix + command} https://youtu.be/abc123 720`
+    )
+  }
 
-    try {
-        await hydro.sendMessage(m.chat, { react: { text: "⏳", key: m.key } });
+  const args = text.split(' ')
+  const link = args[0]
+  const resolution = args[1]
 
-        const axios = (await import('axios')).default;
-        const videoUrl = q.trim();
-        const apiUrl = `https://api-faa.my.id/faa/ytmp4?url=${encodeURIComponent(videoUrl)}`;
+  if (!isUrl(link) || !link.includes('youtu')) {
+    return replyhydro('⚠️ Link YouTube tidak valid!')
+  }
 
-        const { data } = await axios.get(apiUrl);
+  const { savetube } = require('./fitur/ytmp4')
 
-        if (!data.status || !data.result || !data.result.download_url) {
-            return reply("❌ Gagal mengambil video dari API. Pastikan link YouTube valid atau coba lagi nanti.");
-        }
+  const data = await savetube(link)
+  if (!data) return replyhydro('❌ Gagal mengambil data video')
 
-        const video = data.result;
+  const videos = data.videos
+    .filter(v => String(v.label).toLowerCase().includes('p'))
+    .filter(v => v.url)
 
-        const videoBuf = await (
-            await axios.get(video.download_url, { responseType: "arraybuffer" })
-        ).data;
+  if (!videos.length) return replyhydro('❌ Resolusi video tidak tersedia')
 
-        const safeTitle = (video.title || 'video').replace(/[/\\?%*:|"<>]/g, '').substring(0, 50);
+  if (!resolution) {
 
-        const caption =
-            `🎬 *YouTube Downloader*\n\n` +
-            `🚀 *Powered By:* ${botname}\n` +
-            `📥 *Format:* ${video.format}\n` +
-            `📏 *Size:* ${(videoBuf.byteLength / 1024 / 1024).toFixed(2)} MB`;
-        await hydro.sendMessage(
-            m.chat,
-            {
-                video: videoBuf,
-                mimetype: "video/mp4",
-                fileName: `${safeTitle}.mp4`,
-                caption,
-                thumbnail: video.thumbnail
+    const rows = videos.map(v => {
+      const lock = v.quality >= 1080
+      return {
+        header: "",
+        title: lock ? `${v.quality}p 🔒 Premium` : `${v.quality}p`,
+        description: lock
+          ? '🔐 Khusus Premium / Owner'
+          : `⬇ Unduh ${v.quality}p`,
+        id: `.ytmp4 ${link} ${v.quality}`
+      }
+    })
+
+    const msg = generateWAMessageFromContent(m.chat, {
+      viewOnceMessage: {
+        message: {
+          messageContextInfo: {
+            deviceListMetadata: {},
+            deviceListMetadataVersion: 2
+          },
+          interactiveMessage: {
+            body: {
+              text: `📥 *Pilih resolusi video:*\n\n🎬 *${data.title}*`
             },
-            { quoted: m }
-        );
+            footer: {
+              text: `💡 ${botname} — MP4 Downloader`
+            },
+            header: {
+              title: "📺 YouTube MP4",
+              subtitle: "Tanpa Audio",
+              hasMediaAttachment: false
+            },
+            nativeFlowMessage: {
+              buttons: [{
+                name: "single_select",
+                buttonParamsJson: JSON.stringify({
+                  title: "🎯 Pilih Resolusi",
+                  sections: [{
+                    title: "Resolusi Video",
+                    rows
+                  }]
+                })
+              }]
+            }
+          }
+        }
+      }
+    }, { quoted: m })
 
-        await hydro.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
+    await hydro.relayMessage(
+      msg.key.remoteJid,
+      msg.message,
+      { messageId: msg.key.id }
+    )
+    return
+  }
 
-    } catch (e) {
-        console.error(e);
-        reply(`❌ Terjadi kesalahan: ${e.message}\n⚠️ Coba lagi nanti.`);
-    }
+  const selected = videos.find(v => String(v.quality) === resolution)
+  if (!selected) return replyhydro('❌ Resolusi tidak tersedia')
+
+  const isFree = ['144', '240', '360', '480', '720'].includes(resolution)
+
+  if (!isPrem && !Ahmad && !isFree) {
+    return replyhydro(
+      `⛔ *Akses Ditolak!*\n\n` +
+      `Resolusi *${resolution}p* hanya untuk:\n` +
+      `• 👑 Owner\n` +
+      `• 🟢 Premium User`
+    )
+  }
+
+  await hydro.sendMessage(m.chat, {
+    video: { url: selected.url },
+    caption:
+      `✅ *Download Berhasil*\n\n` +
+      `🎬 Judul: ${data.title}\n` +
+      `📺 Resolusi: ${resolution}p`
+  }, { quoted: m })
+
 }
-break;
+break
+
+case 'ytmp4dl': {
+  if (!text) return
+
+  await hydro.sendMessage(m.chat, {
+    video: { url: text },
+    caption: '✅ Sukses\n\nPowered by Alya chan Assistent'
+  }, { quoted: m })
+}
+break
+
+
 
 case "get": case ".g": {
   if (m.key.fromMe) return
